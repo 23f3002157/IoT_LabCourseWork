@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Data Logger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Socket.IO CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <!-- Google Fonts: Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #87CEEB, #E0F7FA);
+            font-family: 'Montserrat', sans-serif;
+            color: #333;
+            position: relative;
+            overflow: auto;
+        }
+        .sky {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJjbG91ZCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSI1MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTE1MCw0MEEyMCwyMCAwIDAsMSAxNzAsMjAgQzE4NSwyMCAxOTUsMzAgMTk1LDQwIEMxOTUsNTAgMTg1LDYwIDE3MCw2MCBDMTU1LDYwIDE0NSw1MCAxNDUsNDAgQzE0NSwzMCAxNTUsMjAgMTcwLDIwWiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjgiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjY2xvdWQpIiBvcGFjaXR5PSIwLjYiIGFuaW1hdGlvbi1kdXJhdGlvbj0iMjBzIiBhbmltYXRpb24tdGltaW5nLWZ1bmN0aW9uPSJsaW5lYXIiIGFuaW1hdGlvbi1pdGVyYXRpb24tY291bnQ9ImluZmluaXRlIiBhbmltYXRpb24tZGlyZWN0aW9uPSJub3JtYWwiIGFuaW1hdGlvbi1uYW1lPSJjbG91ZFNjcm9sbCIvPjwvc3ZnPg==') repeat-x;
+            animation: cloudScroll 20s linear infinite;
+        }
+        @keyframes cloudScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 200px 0; }
+        }
+        .rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background: #87CEEB;
+            animation: fall 1s linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100vh); opacity: 0.7; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 90%;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #1E90FF;
+            text-shadow: 0 0 5px rgba(30, 144, 255, 0.5);
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background: #1E90FF;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
+        }
+        .btn:hover {
+            background: #4682B4;
+            box-shadow: 0 0 15px rgba(30, 144, 255, 0.8);
+        }
+        table {
+            width: 100%;
+            margin-top: 2rem;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 1rem;
+        }
+        th {
+            background: #1E90FF;
+            color: #fff;
+        }
+        td {
+            color: #333;
+        }
+        #logTable {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #status {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            color: #4682B4;
+        }
+        .icon {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sky Background with Clouds -->
+    <div class="sky"></div>
+    <!-- Rain Effect -->
+    <div class="rain" id="rain"></div>
+
+    <div class="container">
+        <h1>Weather Data Logger</h1>
+        <p>Monitor Temperature, Pressure, and Humidity</p>
+
+        <!-- Control Buttons -->
+        <button id="startBtn" class="btn">Start Logging</button>
+        <button id="stopBtn" class="btn">Stop Logging</button>
+
+        <!-- Status -->
+        <div id="status">Status: Stopped</div>
+
+        <!-- Data Log Table -->
+        <div id="logTable">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th><i class="fas fa-thermometer-half icon"></i>Temperature (°C)</th>
+                        <th><i class="fas fa-tachometer-alt icon"></i>Pressure (hPa)</th>
+                        <th><i class="fas fa-tint icon"></i>Humidity (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataLog">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Rain Effect
+        const rainContainer = document.getElementById('rain');
+        for (let i = 0; i < 50; i++) {
+            const raindrop = document.createElement('div');
+            raindrop.className = 'raindrop';
+            raindrop.style.left = Math.random() * 100 + 'vw';
+            raindrop.style.animationDelay = Math.random() * 2 + 's';
+            rainContainer.appendChild(raindrop);
+        }
+
+        // Connect to Flask-SocketIO server
+        const socket = io.connect('http://' + window.location.hostname + ':5001');
+
+        const dataLog = document.getElementById('dataLog');
+        const statusDiv = document.getElementById('status');
+
+        // Start Logging
+        document.getElementById('startBtn').addEventListener('click', () => {
+            socket.emit('start_logging');
+        });
+
+        // Stop Logging
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            socket.emit('stop_logging');
+        });
+
+        // Update status
+        socket.on('logging_status', (data) => {
+            statusDiv.textContent = `Status: ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`;
+        });
+
+        // Add new data to the log
+        socket.on('new_data', (entry) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.timestamp}</td>
+                <td>${entry.temperature}</td>
+                <td>${entry.pressure}</td>
+                <td>${entry.humidity}</td>
+            `;
+            dataLog.prepend(row);
+
+            // Limit to 50 rows for performance
+            if (dataLog.children.length > 50) {
+                dataLog.removeChild(dataLog.lastChild);
+            }
+
+            // Auto-scroll to top
+            document.getElementById('logTable').scrollTop = 0;
+        });
+
+        // Load existing log on page load
+        socket.on('connect', () => {
+            socket.emit('get_log');
+        });
+
+        socket.on('data_log', (log) => {
+            dataLog.innerHTML = '';
+            log.reverse().forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.timestamp}</td>
+                    <td>${entry.temperature}</td>
+                    <td>${entry.pressure}</td>
+                    <td>${entry.humidity}</td>
+                `;
+                dataLog.appendChild(row);
+            });
+        });
+    </script>
+</body>
+</html>
